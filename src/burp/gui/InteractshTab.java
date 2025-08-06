@@ -1,22 +1,14 @@
 package burp.gui;
 
 import burp.api.montoya.MontoyaApi;
-import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.core.ByteArray;
+import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.http.message.responses.HttpResponse;
 import burp.api.montoya.ui.editor.HttpRequestEditor;
 import burp.api.montoya.ui.editor.HttpResponseEditor;
 import burp.listeners.InteractshListener;
 import interactsh.InteractEntry;
 import layout.SpringUtilities;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableColumn;
-import javax.swing.table.TableRowSorter;
 
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
@@ -26,6 +18,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import javax.swing.*;
+import javax.swing.table.*;
 
 public class InteractshTab extends JComponent {
     private final MontoyaApi api;
@@ -149,6 +143,7 @@ public class InteractshTab extends JComponent {
             listener = new InteractshListener(newUrl -> {
                 StringSelection stringSelection = new StringSelection(newUrl);
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+                Toolkit.getDefaultToolkit().getSystemSelection().setContents(stringSelection, null);
                 api.logging().logToOutput("Generated and copied new Interact.sh URL: " + newUrl);
             });
         });
@@ -216,12 +211,12 @@ public class InteractshTab extends JComponent {
         innerConfig.setLayout(new SpringLayout());
         subConfigPanel.add(innerConfig);
 
-        serverText = new JTextField(Config.defaultServer, 20);
-        portText = new JTextField(Config.defaultPort, 20);
-        authText = new JTextField(Config.defaultAuthorization, 20);
-        pollText = new JTextField(Config.defaultPollInterval, 20);
+        serverText = new JTextField(Config.getHost(), 20);
+        portText = new JTextField(Config.getPort(), 20);
+        authText = new JTextField(Config.getAuth(), 20);
+        pollText = new JTextField(Config.getPollInterval(), 20);
         tlsBox = new JCheckBox("", true);
-        tlsBox.setSelected(Config.defaultUseTLS);
+        tlsBox.setSelected(Config.getScheme());
 
         innerConfig.add(new JLabel("Server: ", SwingConstants.TRAILING));
         innerConfig.add(serverText);

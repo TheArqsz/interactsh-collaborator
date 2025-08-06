@@ -1,15 +1,15 @@
 package burp.listeners;
 
+import interactsh.Client;
+
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.swing.SwingUtilities;
-
-import interactsh.Client;
 
 public class InteractshListener {
     private final ExecutorService executor;
@@ -76,6 +76,7 @@ public class InteractshListener {
             burp.BurpExtender.api.logging().logToOutput("New domain in this session is: " + interactDomain);
             StringSelection stringSelection = new StringSelection(interactDomain);
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+            Toolkit.getDefaultToolkit().getSystemSelection().setContents(stringSelection, null);
         } else {
             burp.BurpExtender.api.logging().logToError("Interact.sh client is not yet initialized.");
         }

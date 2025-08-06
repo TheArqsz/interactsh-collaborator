@@ -1,19 +1,17 @@
 package burp;
 
-import java.awt.Component;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.swing.JMenuItem;
-
 import burp.api.montoya.BurpExtension;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.extension.ExtensionUnloadingHandler;
 import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
 import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider;
 import burp.gui.InteractshTab;
-
 import interactsh.InteractEntry;
+
+import java.awt.Component;
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.JMenuItem;
 
 public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, ExtensionUnloadingHandler {
   public static MontoyaApi api;

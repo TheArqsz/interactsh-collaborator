@@ -1,82 +1,80 @@
 package burp.gui;
 
+import burp.BurpExtender;
 import burp.api.montoya.persistence.Preferences;
 
 public class Config {
 
-  public static String defaultServer = "oast.pro";
-  public static String defaultPort = "443";
-  public static Boolean defaultUseTLS = true;
-  public static String defaultAuthorization = "";
-  public static String defaultPollInterval = "20";
+  private static final String DEFAULT_SERVER = "oast.pro";
+  private static final String DEFAULT_PORT = "443";
+  private static final String DEFAULT_AUTHORIZATION = "";
+  private static final String DEFAULT_POLL_INTERVAL = "60";
+  private static final String DEFAULT_USES_TLS = "true";
+
+  private static Preferences preferences() {
+    return BurpExtender.api.persistence().preferences();
+  }
+
+  private static String getString(String key, String defaultValue) {
+    String value = preferences().getString(key);
+    return (value == null) ? defaultValue : value;
+  }
 
   public static void generateConfig() {
-    Preferences preferences = burp.BurpExtender.api.persistence().preferences();
-
-    String server = preferences.getString("interactsh-server");
-    String port = preferences.getString("interactsh-port");
-
-    if ((server == null || server.isEmpty()) ||
-        (port == null || port.isEmpty()) ||
-        !preferences.stringKeys().contains("interactsh-authorization") ||
-        !preferences.stringKeys().contains("interactsh-uses-tls")) {
-      preferences.setString("interactsh-server", "oast.pro");
-      preferences.setString("interactsh-port", "443");
-      preferences.setString("interactsh-authorization", "");
-      preferences.setString("interactsh-poll-time", "60");
-      preferences.setString("interactsh-uses-tls", Boolean.toString(true));
+    if (preferences().getString("interactsh-server") == null) {
+      preferences().setString("interactsh-server", DEFAULT_SERVER);
+      preferences().setString("interactsh-port", DEFAULT_PORT);
+      preferences().setString("interactsh-authorization", DEFAULT_AUTHORIZATION);
+      preferences().setString("interactsh-poll-time", DEFAULT_POLL_INTERVAL);
+      preferences().setString("interactsh-uses-tls", DEFAULT_USES_TLS);
     }
   }
 
   public static void loadConfig() {
-    Preferences preferences = burp.BurpExtender.api.persistence().preferences();
-    String server = preferences.getString("interactsh-server");
-    String port = preferences.getString("interactsh-port");
-    String tls = preferences.getString("interactsh-uses-tls");
-    String authorization = preferences.getString("interactsh-authorization");
-    String pollinterval = preferences.getString("interactsh-poll-time");
+    String server = getString("interactsh-server", DEFAULT_SERVER);
+    String port = getString("interactsh-port", DEFAULT_PORT);
+    String tls = getString("interactsh-uses-tls", DEFAULT_USES_TLS);
+    String authorization = getString("interactsh-authorization", DEFAULT_AUTHORIZATION);
+    String pollInterval = getString("interactsh-poll-time", DEFAULT_POLL_INTERVAL);
 
-    // Update each of the text boxes on the Configuration pane
     InteractshTab.setServerText(server);
     InteractshTab.setPortText(port);
     InteractshTab.setAuthText(authorization);
-    InteractshTab.setPollText(pollinterval);
+    InteractshTab.setPollText(pollInterval);
     InteractshTab.setTlsBox(Boolean.parseBoolean(tls));
   }
 
   public static void updateConfig() {
-    Preferences preferences = burp.BurpExtender.api.persistence().preferences();
-    // Read each of the text boxes on the Configuration pane
     String server = InteractshTab.getServerText();
     String port = InteractshTab.getPortText();
     String authorization = InteractshTab.getAuthText();
-    String pollinterval = InteractshTab.getPollText();
+    String pollInterval = InteractshTab.getPollText();
     String tls = InteractshTab.getTlsBox();
 
-    preferences.setString("interactsh-server", server);
-    preferences.setString("interactsh-port", port);
-    preferences.setString("interactsh-uses-tls", tls);
-    preferences.setString("interactsh-poll-time", pollinterval);
-    preferences.setString("interactsh-authorization", authorization);
+    preferences().setString("interactsh-server", server);
+    preferences().setString("interactsh-port", port);
+    preferences().setString("interactsh-uses-tls", tls);
+    preferences().setString("interactsh-poll-time", pollInterval);
+    preferences().setString("interactsh-authorization", authorization);
   }
 
   public static String getHost() {
-    return burp.BurpExtender.api.persistence().preferences().getString("interactsh-server");
+    return getString("interactsh-server", DEFAULT_SERVER);
   }
 
   public static String getPort() {
-    return burp.BurpExtender.api.persistence().preferences().getString("interactsh-port");
+    return getString("interactsh-port", DEFAULT_PORT);
   }
 
   public static boolean getScheme() {
-    return Boolean.parseBoolean(burp.BurpExtender.api.persistence().preferences().getString("interactsh-uses-tls"));
+    return Boolean.parseBoolean(getString("interactsh-uses-tls", DEFAULT_USES_TLS));
   }
 
   public static String getAuth() {
-    return burp.BurpExtender.api.persistence().preferences().getString("interactsh-authorization");
+    return getString("interactsh-authorization", DEFAULT_AUTHORIZATION);
   }
 
   public static String getPollInterval() {
-    return burp.BurpExtender.api.persistence().preferences().getString("interactsh-poll-time");
+    return getString("interactsh-poll-time", DEFAULT_POLL_INTERVAL);
   }
 }

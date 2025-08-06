@@ -1,5 +1,9 @@
 package interactsh;
 
+import burp.api.montoya.http.HttpService;
+import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.http.message.responses.HttpResponse;
+import com.github.shamil.Xid;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -11,36 +15,27 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
-
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.github.shamil.Xid;
-
-import burp.api.montoya.http.HttpService;
-import burp.api.montoya.http.message.requests.HttpRequest;
-import burp.api.montoya.http.message.responses.HttpResponse;
-
 public class Client {
-    public PrivateKey privateKey;
+    private PrivateKey privateKey;
     private PublicKey publicKey;
 
     private final String secretKey;
     private final String correlationId;
     private final String pubKeyBase64;
 
-    // Defaults
-    private String host = "oast.pro";
-    private int port = 443;
-    private boolean scheme = true;
-    private boolean isRegistered = false;
-    private String authorization = null;
+    private String host;
+    private int port;
+    private boolean scheme;
+    private boolean isRegistered;
+    private String authorization;
 
     public Client() {
         this.correlationId = Xid.get().toString();
