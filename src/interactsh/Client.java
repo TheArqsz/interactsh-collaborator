@@ -92,7 +92,11 @@ public class Client {
                 burp.BurpExtender.api.logging().logToError("Error message: \n\n" + resp.bodyToString());
             }
         } catch (Exception ex) {
-            burp.BurpExtender.api.logging().logToError(ex);
+            if (ex.getMessage() != null && ex.getMessage().contains("UnknownHostException")) {
+                burp.BurpExtender.api.logging().logToError("Registration failed - the host '" + host + "' could not be resolved.");
+            } else {
+                burp.BurpExtender.api.logging().logToError(ex.getMessage());
+            }
         }
         return false;
     }
@@ -131,7 +135,11 @@ public class Client {
                 }
             }
         } catch (Exception ex) {
-            burp.BurpExtender.api.logging().logToError(ex.getMessage());
+            if (ex.getMessage() != null && ex.getMessage().contains("UnknownHostException")) {
+                burp.BurpExtender.api.logging().logToError("Polling failed - the host '" + host + "' could not be resolved.");
+            } else {
+                burp.BurpExtender.api.logging().logToError(ex.getMessage());
+            }
         }
         return true;
     }
@@ -160,7 +168,11 @@ public class Client {
             HttpRequest httpRequest = HttpRequest.httpRequest(httpService, request);
             burp.BurpExtender.api.http().sendRequest(httpRequest).response();
         } catch (Exception ex) {
-            burp.BurpExtender.api.logging().logToError(ex.getMessage());
+            if (ex.getMessage() != null && ex.getMessage().contains("UnknownHostException")) {
+                burp.BurpExtender.api.logging().logToError("Deregister failed - the host '" + host + "' could not be resolved.");
+            } else {
+                burp.BurpExtender.api.logging().logToError(ex.getMessage());
+            }
         }
     }
 

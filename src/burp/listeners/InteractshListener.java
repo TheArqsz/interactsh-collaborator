@@ -75,8 +75,12 @@ public class InteractshListener {
             String interactDomain = currentClient.getInteractDomain();
             burp.BurpExtender.api.logging().logToOutput("New domain in this session is: " + interactDomain);
             StringSelection stringSelection = new StringSelection(interactDomain);
-            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
-            Toolkit.getDefaultToolkit().getSystemSelection().setContents(stringSelection, null);
+            try {
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+                Toolkit.getDefaultToolkit().getSystemSelection().setContents(stringSelection, null);
+            } catch (Exception e) {
+                burp.BurpExtender.api.logging().logToError("Clipboard issue: " + e.getMessage());
+            }
         } else {
             burp.BurpExtender.api.logging().logToError("Interact.sh client is not yet initialized.");
         }

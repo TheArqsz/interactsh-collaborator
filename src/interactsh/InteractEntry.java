@@ -19,6 +19,8 @@ public class InteractEntry {
     public String rawResponse;
     public String address;
     public Instant timestamp;
+    private boolean isRead = false;
+
 
     public final HttpRequest httpRequest;
     public final HttpResponse httpResponse;
@@ -80,5 +82,13 @@ public class InteractEntry {
                 + "UID: " + uid + "\n"
                 + "Address: " + address + "\n"
                 + "Timestamp: " + timestamp + "\n";
+    }
+
+    public boolean isRead() {
+        return isRead;
+    }
+
+    public void setRead(boolean read) {
+        isRead = read;
     }
 }

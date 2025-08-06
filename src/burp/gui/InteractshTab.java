@@ -102,11 +102,11 @@ public class InteractshTab extends JComponent {
                 tableColumn.setMaxWidth(col.getMaxWidth());
             }
         }
-        
-        DefaultTableCellRenderer leftAlignRenderer = new DefaultTableCellRenderer();
-        leftAlignRenderer.setHorizontalAlignment(SwingConstants.LEFT);
-        logTable.getColumnModel().getColumn(LogTable.Column.ID.ordinal()).setCellRenderer(leftAlignRenderer);
-        logTable.getColumnModel().getColumn(LogTable.Column.TIME.ordinal()).setCellRenderer(new InstantCellRenderer());
+
+        LogTableCellRenderer renderer = new LogTableCellRenderer();
+        for (int i = 0; i < logTable.getColumnCount(); i++) {
+            logTable.getColumnModel().getColumn(i).setCellRenderer(renderer);
+        }
 
         logTable.setRowSelectionAllowed(true);
         logTable.setColumnSelectionAllowed(true);
@@ -142,8 +142,12 @@ public class InteractshTab extends JComponent {
             listener.close();
             listener = new InteractshListener(newUrl -> {
                 StringSelection stringSelection = new StringSelection(newUrl);
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
-                Toolkit.getDefaultToolkit().getSystemSelection().setContents(stringSelection, null);
+                try {
+                    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+                    Toolkit.getDefaultToolkit().getSystemSelection().setContents(stringSelection, null);
+                } catch (Exception ex) {
+                    api.logging().logToError("Clipboard issue: " + ex.getMessage());
+                }
                 api.logging().logToOutput("Generated and copied new Interact.sh URL: " + newUrl);
             });
         });
@@ -292,12 +296,28 @@ public class InteractshTab extends JComponent {
     public static void setTlsBox(boolean value) { tlsBox.setSelected(value); }
     public JTextField getPollField() { return pollField; }
 
+    private void updateUnreadCount() {
+        Container parent = getParent();
+        if (parent instanceof JTabbedPane tabbedPane) {
+            int tabIndex = tabbedPane.indexOfComponent(this);
+            if (tabIndex != -1) {
+                long unreadCount = log.stream().filter(e -> !e.isRead()).count();
+                String newTitle = "Interactsh";
+                if (unreadCount > 0) {
+                    newTitle += " (" + unreadCount + ")";
+                }
+                tabbedPane.setTitleAt(tabIndex, newTitle);
+            }
+        }
+    }
+
     public void addToTable(InteractEntry i) {
         SwingUtilities.invokeLater(() -> {
             synchronized (log) {
                 log.add(i);
                 int rowIndex = log.size() - 1;
                 logTableModel.fireTableRowsInserted(rowIndex, rowIndex);
+                updateUnreadCount();
             }
         });
     }
@@ -309,6 +329,7 @@ public class InteractshTab extends JComponent {
             responseViewer.setResponse(null);
             genericDetailsViewer.setText("");
             logTableModel.fireTableDataChanged();
+            updateUnreadCount();
         }
     }
 
@@ -323,12 +344,20 @@ public class InteractshTab extends JComponent {
 
         @Override
         public void changeSelection(int row, int col, boolean toggle, boolean extend) {
+            super.changeSelection(row, col, toggle, extend);
+
             int modelRow = convertRowIndexToModel(row);
             if (modelRow == -1) {
                 return;
             }
 
             InteractEntry selectedEntry = log.get(modelRow);
+
+            if (!selectedEntry.isRead()) {
+                selectedEntry.setRead(true);
+                logTableModel.fireTableRowsUpdated(modelRow, modelRow);
+                updateUnreadCount();
+            }
 
             if (selectedEntry.protocol.equals("http") || selectedEntry.protocol.equals("https")) {
                 resultsLayout.show(resultsCardPanel, "HTTP_VIEW");
@@ -350,25 +379,39 @@ public class InteractshTab extends JComponent {
         }
     }
 
-    private static class InstantCellRenderer extends DefaultTableCellRenderer {
+    private class LogTableCellRenderer extends DefaultTableCellRenderer {
         private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS z").withZone(ZoneId.systemDefault());
 
-        public InstantCellRenderer() {
-            setHorizontalAlignment(SwingConstants.LEFT);
+        private final Font plainFont;
+        private final Font boldFont;
+
+        public LogTableCellRenderer() {
+            Font originalFont = getFont();
+            this.plainFont = originalFont.deriveFont(Font.PLAIN);
+            this.boldFont = originalFont.deriveFont(Font.BOLD);
         }
 
         @Override
-        public void setValue(Object value) {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
             if (value instanceof Instant) {
-                value = FORMATTER.format((Instant) value);
+                setText(FORMATTER.format((Instant) value));
+            } else {
+                setText(value == null ? "" : value.toString());
             }
-            super.setValue(value);
+
+            if (!isSelected) {
+                int modelRow = table.convertRowIndexToModel(row);
+                InteractEntry entry = log.get(modelRow);
+                c.setFont(entry.isRead() ? plainFont : boldFont);
+            }
+            
+            setHorizontalAlignment(SwingConstants.LEFT);
+
+            return c;
         }
     }
-
-    //
-    // implement AbstractTableModel
-    //
 
     private class LogTable extends AbstractTableModel {
         public enum Column {
@@ -433,5 +476,17 @@ public class InteractshTab extends JComponent {
 
     public void cleanup() {
         listener.close();
+    }
+
+    public JTable getLogTable() {
+        return logTable;
+    }
+
+    public List<InteractEntry> getLog() {
+        return log;
+    }
+
+    public AbstractTableModel getLogTableModel() {
+        return logTableModel;
     }
 }
