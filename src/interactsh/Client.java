@@ -66,7 +66,7 @@ public class Client {
     }
 
     public boolean register() {
-        burp.BurpExtender.api.logging().logToOutput("Registering correlation: " + correlationId);
+        burp.BurpExtender.api.logging().logToOutput("Registering correlation with ID: " + correlationId);
         try {
             JSONObject registerData = new JSONObject();
             registerData.put("public-key", pubKeyBase64);
@@ -94,6 +94,7 @@ public class Client {
                 return true;
             } else {
                 burp.BurpExtender.api.logging().logToError("Registration was unsuccessful. Status Code: " + resp.statusCode());
+                burp.BurpExtender.api.logging().logToError("Error message: \n\n" + resp.bodyToString());
             }
         } catch (Exception ex) {
             burp.BurpExtender.api.logging().logToError(ex);
@@ -115,7 +116,7 @@ public class Client {
         HttpResponse resp = burp.BurpExtender.api.http().sendRequest(httpRequest).response();
         if (resp.statusCode() != 200) {
             burp.BurpExtender.api.logging()
-                    .logToOutput("Poll for " + correlationId + " was unsuccessful: " + resp.statusCode());
+                    .logToError("Session with correlation ID " + correlationId + " was unsuccessful - status returned: " + resp.statusCode());
             return false;
         }
 
@@ -141,7 +142,7 @@ public class Client {
     }
 
     public void deregister() {
-        burp.BurpExtender.api.logging().logToOutput("Deregistering correlation ID: " + correlationId);
+        burp.BurpExtender.api.logging().logToOutput("Deregistering correlation with ID: " + correlationId);
         try {
             JSONObject deregisterData = new JSONObject();
             deregisterData.put("correlation-id", correlationId);
@@ -166,6 +167,10 @@ public class Client {
         } catch (Exception ex) {
             burp.BurpExtender.api.logging().logToError(ex.getMessage());
         }
+    }
+
+    public String getCorrelationId() {
+        return this.correlationId;
     }
 
     public String getInteractDomain() {

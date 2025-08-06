@@ -19,6 +19,7 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableRowSorter;
 
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -56,7 +57,7 @@ public class InteractshTab extends JComponent {
 
     public InteractshTab(MontoyaApi api) {
         this.api = api;
-        this.listener = new InteractshListener();
+        this.listener = new InteractshListener(null);
 
         setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 
@@ -91,7 +92,7 @@ public class InteractshTab extends JComponent {
         logTable.setRowSorter(sorter);
 
         List<RowSorter.SortKey> sortKeys = new ArrayList<>();
-        sortKeys.add(new RowSorter.SortKey(LogTable.Column.ID.ordinal(), SortOrder.ASCENDING));
+        sortKeys.add(new RowSorter.SortKey(LogTable.Column.ID.ordinal(), SortOrder.DESCENDING));
         sorter.setSortKeys(sortKeys);
 
         sorter.setComparator(LogTable.Column.TYPE.ordinal(), Comparator.naturalOrder());
@@ -126,7 +127,8 @@ public class InteractshTab extends JComponent {
         mainTopPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton collaboratorButton = new JButton("Generate Interactsh URL");
+        JButton generateUrlButton = new JButton("Regenerate Interactsh Session");
+        JButton copyUrlButton = new JButton("Copy URL to clipboard");
         JButton refreshButton = new JButton("Refresh");
         JButton clearLogButton = new JButton("Clear log");
         JLabel pollLabel = new JLabel("Poll Time: ");
@@ -136,22 +138,49 @@ public class InteractshTab extends JComponent {
         pollField.setBorder(null);
         pollField.setForeground(UIManager.getColor("Label.foreground"));
 
-        collaboratorButton.addActionListener(e -> this.listener.generateCollaborator());
+        copyUrlButton.setBackground(new Color(216, 102, 51));
+        copyUrlButton.setForeground(Color.WHITE);
+        copyUrlButton.setOpaque(true); 
+        copyUrlButton.setFont(copyUrlButton.getFont().deriveFont(Font.BOLD));
+        copyUrlButton.setBorderPainted(false);
+
+        generateUrlButton.addActionListener(e -> {
+            listener.close();
+            listener = new InteractshListener(newUrl -> {
+                StringSelection stringSelection = new StringSelection(newUrl);
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+                api.logging().logToOutput("Generated and copied new Interact.sh URL: " + newUrl);
+            });
+        });
+        copyUrlButton.addActionListener(e -> this.listener.copyCurrentUrlToClipboard());
         refreshButton.addActionListener(e -> this.listener.pollNowAll());
         clearLogButton.addActionListener(e -> this.clearLog());
 
-        controlsPanel.add(collaboratorButton);
+        controlsPanel.add(generateUrlButton);
+        controlsPanel.add(Box.createHorizontalStrut(3)); 
+        controlsPanel.add(copyUrlButton);
+        controlsPanel.add(Box.createHorizontalStrut(15)); 
+        controlsPanel.add(refreshButton);
+        controlsPanel.add(Box.createHorizontalStrut(3)); 
+        controlsPanel.add(clearLogButton);
+        controlsPanel.add(Box.createHorizontalStrut(20)); 
         controlsPanel.add(pollLabel);
         controlsPanel.add(pollField);
-        controlsPanel.add(refreshButton);
-        controlsPanel.add(clearLogButton);
 
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel filterLabel = new JLabel("Filter:");
         filterLabel.setEnabled(false);
         filterPanel.add(filterLabel);
         ButtonGroup filterGroup = new ButtonGroup();
-        String[] protocols = {"All", "HTTP", "DNS", "SMTP"}; 
+        String[] protocols = {
+            "All", 
+            "HTTP", 
+            "DNS", 
+            "SMTP",
+            "LDAP",
+            "SMB",
+            "FTP" 
+        }; 
 
         for (String protocol : protocols) {
             JToggleButton filterButton = new JToggleButton(protocol);
@@ -187,11 +216,12 @@ public class InteractshTab extends JComponent {
         innerConfig.setLayout(new SpringLayout());
         subConfigPanel.add(innerConfig);
 
-        serverText = new JTextField("oast.pro", 20);
-        portText = new JTextField("443", 20);
-        authText = new JTextField("", 20);
-        pollText = new JTextField("60", 20);
+        serverText = new JTextField(Config.defaultServer, 20);
+        portText = new JTextField(Config.defaultPort, 20);
+        authText = new JTextField(Config.defaultAuthorization, 20);
+        pollText = new JTextField(Config.defaultPollInterval, 20);
         tlsBox = new JCheckBox("", true);
+        tlsBox.setSelected(Config.defaultUseTLS);
 
         innerConfig.add(new JLabel("Server: ", SwingConstants.TRAILING));
         innerConfig.add(serverText);
@@ -206,10 +236,34 @@ public class InteractshTab extends JComponent {
 
         JButton updateConfigButton = new JButton("Update Settings");
         updateConfigButton.addActionListener(e -> {
+            String oldServer = burp.gui.Config.getHost();
+            String oldPort = burp.gui.Config.getPort();
+            String oldAuth = burp.gui.Config.getAuth();
+            Boolean oldTls = burp.gui.Config.getScheme();
+
+            String newServer = serverText.getText();
+            String newPort = portText.getText();
+            String newAuth = authText.getText();
+            Boolean newTls = tlsBox.isSelected();
+
             burp.gui.Config.updateConfig();
             pollField.setText(pollText.getText());
-            listener.close();
-            this.listener = new InteractshListener();
+
+            boolean criticalSettingChanged = !oldServer.equals(newServer) || !oldPort.equals(newPort) || !oldAuth.equals(newAuth) || oldTls != newTls;
+
+            if (criticalSettingChanged) {
+                api.logging().logToOutput("Server configuration changed. Creating new Interact.sh session.");
+                if (listener != null) {
+                    listener.close();
+                }
+                this.listener.close();
+                this.listener = new InteractshListener(null);
+            } else {
+                api.logging().logToOutput("Poll interval updated. Triggering immediate poll.");
+                if (listener != null) {
+                    listener.pollNowAll();
+                }
+            }
         });
         innerConfig.add(updateConfigButton);
         innerConfig.add(new JPanel());

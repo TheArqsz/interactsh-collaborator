@@ -3,6 +3,13 @@ package burp.gui;
 import burp.api.montoya.persistence.Preferences;
 
 public class Config {
+
+  public static String defaultServer = "oast.pro";
+  public static String defaultPort = "443";
+  public static Boolean defaultUseTLS = true;
+  public static String defaultAuthorization = "";
+  public static String defaultPollInterval = "20";
+
   public static void generateConfig() {
     Preferences preferences = burp.BurpExtender.api.persistence().preferences();
 

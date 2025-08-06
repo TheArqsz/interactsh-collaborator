@@ -58,15 +58,11 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
     BurpExtender.tab.addToTable(i);
   }
 
-  //
-  // implement ContextMenuItemsProvider
-  //
-
   @Override
   public List<Component> provideMenuItems(ContextMenuEvent event) {
     List<Component> menuList = new ArrayList<Component>();
-    JMenuItem item = new JMenuItem("Generate Interactsh url");
-    item.addActionListener(e -> BurpExtender.tab.getListener().generateCollaborator());
+    JMenuItem item = new JMenuItem("Copy Interactsh URL");
+    item.addActionListener(e -> BurpExtender.tab.getListener().copyCurrentUrlToClipboard());
     menuList.add(item);
 
     return menuList;

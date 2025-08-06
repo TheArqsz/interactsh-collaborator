@@ -5,29 +5,38 @@ import java.awt.datatransfer.StringSelection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.function.Consumer;
+import javax.swing.SwingUtilities;
 
 import interactsh.Client;
 
 public class InteractshListener {
     private final ExecutorService executor;
     private volatile Client client;
+    private final Semaphore pollSignal = new Semaphore(0);
 
-    public InteractshListener() {
+
+    public InteractshListener(Consumer<String> onReadyCallback) {
         this.executor = Executors.newSingleThreadExecutor();
-        this.executor.submit(this::pollingLoop);
+        this.executor.submit(() -> pollingLoop(onReadyCallback));
     }
 
-    private void pollingLoop() {
+    private void pollingLoop(Consumer<String> onReadyCallback) {
         this.client = new Client();
         try {
             if (client.register()) {
+                if (onReadyCallback != null) {
+                    String newUrl = client.getInteractDomain();
+                    SwingUtilities.invokeLater(() -> onReadyCallback.accept(newUrl));
+                }
                 while (!Thread.currentThread().isInterrupted()) {
                     client.poll();
                     try {
                         long pollTime = burp.BurpExtender.getPollTime();
-                        TimeUnit.SECONDS.sleep(pollTime);
+                        pollSignal.tryAcquire(pollTime, TimeUnit.SECONDS);
                     } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt(); // Preserve interrupt status to exit loop
+                        Thread.currentThread().interrupt(); 
                     }
                 }
             } else {
@@ -56,15 +65,15 @@ public class InteractshListener {
     public void pollNowAll() {
         Client currentClient = this.client;
         if (currentClient != null && currentClient.isRegistered()) {
-            executor.submit(currentClient::poll);
+            pollSignal.release();
         }
     }
 
-    public void generateCollaborator() {
+    public void copyCurrentUrlToClipboard() {
         Client currentClient = this.client;
         if (currentClient != null) {
             String interactDomain = currentClient.getInteractDomain();
-            burp.BurpExtender.api.logging().logToOutput("New domain is: " + interactDomain);
+            burp.BurpExtender.api.logging().logToOutput("New domain in this session is: " + interactDomain);
             StringSelection stringSelection = new StringSelection(interactDomain);
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
         } else {
