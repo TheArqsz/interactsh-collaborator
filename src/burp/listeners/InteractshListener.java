@@ -1,60 +1,74 @@
 package burp.listeners;
 
-import java.awt.*;
+import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import burp.BurpExtender;
 import interactsh.Client;
 
-public class InteractshListener implements ActionListener {
-    public ArrayList<Thread> pollers = new ArrayList<Thread>();
-    public boolean running = true;
+public class InteractshListener {
+    private final ExecutorService executor;
+    private volatile Client client;
 
     public InteractshListener() {
+        this.executor = Executors.newSingleThreadExecutor();
+        this.executor.submit(this::pollingLoop);
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        burp.BurpExtender.api.logging().logToOutput("Generating new Interactsh client");
-        Client c = new Client();
+    private void pollingLoop() {
+        this.client = new Client();
         try {
-            c.generateKeys();
-
-            Thread polling = new Thread(new Runnable() {
-                public void run() {
+            if (client.register()) {
+                while (!Thread.currentThread().isInterrupted()) {
+                    client.poll();
                     try {
-                        if (c.registerClient()) {
-                            burp.BurpExtender.addClient(c);
-                            while (running == true) {
-                                if (!c.poll()) {
-                                    return;
-                                }
-                                TimeUnit.SECONDS.sleep(burp.BurpExtender.getPollTime());
-                            }
-                        } else {
-                            burp.BurpExtender.api.logging().logToOutput("Error registering client");
-                        }
-                    } catch (InterruptedException ie) {
-                    } catch (Exception ex) {
-                        burp.BurpExtender.api.logging().logToError(ex.getMessage());
+                        long pollTime = burp.BurpExtender.getPollTime();
+                        TimeUnit.SECONDS.sleep(pollTime);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt(); // Preserve interrupt status to exit loop
                     }
                 }
-            });
-            pollers.add(polling);
-            polling.start();
-
-            TimeUnit.SECONDS.sleep(1);
-            // Set clipboard with new interactsh domain
-            String domain = c.getInteractDomain();
-            burp.BurpExtender.api.logging().logToOutput("New domain is: " + domain);
-            StringSelection stringSelection = new StringSelection(domain);
-            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+            } else {
+                burp.BurpExtender.api.logging().logToError("Unable to register interactsh client");
+            }
         } catch (Exception ex) {
             burp.BurpExtender.api.logging().logToError(ex.getMessage());
+        } finally {
+            if (client != null && client.isRegistered()) {
+                client.deregister();
+            }
+        }
+    }
+
+    public void close() {
+        executor.shutdownNow();
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                burp.BurpExtender.api.logging().logToError("Polling task did not terminate in time.");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    public void pollNowAll() {
+        Client currentClient = this.client;
+        if (currentClient != null && currentClient.isRegistered()) {
+            executor.submit(currentClient::poll);
+        }
+    }
+
+    public void generateCollaborator() {
+        Client currentClient = this.client;
+        if (currentClient != null) {
+            String interactDomain = currentClient.getInteractDomain();
+            burp.BurpExtender.api.logging().logToOutput("New domain is: " + interactDomain);
+            StringSelection stringSelection = new StringSelection(interactDomain);
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+        } else {
+            burp.BurpExtender.api.logging().logToError("Interact.sh client is not yet initialized.");
         }
     }
 }

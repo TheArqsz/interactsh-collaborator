@@ -11,8 +11,20 @@ All results are logged in the Interactsh Logs tab once the extension is loaded. 
 
 ### Build
 
+#### Locally 
+
 1. `mvn package`
 2. Add the target/collaborator-1.x.x-dev-jar-with-dependencies.jar file as a new Java extension in Burpsuite
+
+#### Docker
+
+```
+docker build --output ./build-output .
+```
+
+The directory `docker build --output ./build-output .` will contain all built jars
+
+#### Download release
 
 Alternatively you can download the precompiled library from the [latest releast](https://github.com/wdahlenburg/interactsh-collaborator/releases/latest)
 
