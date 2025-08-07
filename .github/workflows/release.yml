@@ -46,11 +46,12 @@ jobs:
 
       - name: Bump version and push tag
         id: tag_version
-        uses: mathieudutour/github-tag-action@v6.2
+        uses: mathieudutour/github-tag-action@fix-tag-existing
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           fetch_all_tags: true
           default_bump: false
+          force_update: true
 
       - name: Rename artifact
         id: rename_artifact
@@ -59,8 +60,9 @@ jobs:
 
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
+        if: steps.tag_version.outputs.new_version != ''
         with:
-            tag: v${{ steps.tag_version.outputs.version }}
-            name: v${{ steps.tag_version.outputs.version }}
-            body: ${{ github.event.inputs.release_notes || format('Official release of version {0}. The attached JAR file contains the compiled application and all dependencies.', steps.tag_version.outputs.version) }}
+            tag: ${{ steps.tag_version.outputs.new_tag  }}
+            name: ${{ steps.tag_version.outputs.new_tag }}
+            body: ${{ github.event.inputs.release_notes || steps.tag_version.outputs.changelog || format('Official release of version {0}. The attached JAR file contains the compiled application and all dependencies.', steps.tag_version.outputs.new_version ) }}
             artifacts: ./target/interactsh-collaborator.jar
