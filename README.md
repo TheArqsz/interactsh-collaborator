@@ -1,5 +1,7 @@
 # Interactsh Collaborator - Revised
 
+[![Build and Publish Release](https://github.com/TheArqsz/interactsh-collaborator-rev/actions/workflows/release.yml/badge.svg)](https://github.com/TheArqsz/interactsh-collaborator-rev/actions/workflows/release.yml)
+
 This is a Burp Suite extension for OOB testing with Interact.sh.
 
 ![Interactsh-Collaborator](assets/interactsh-demo.gif)
@@ -53,6 +55,10 @@ docker build --output ./build-output .
 ```
 
 The directory `./build-output` will contain all generated jars.
+
+### Releases
+
+You can download the `interactsh-collaborator.jar` from [the releases page](https://github.com/TheArqsz/interactsh-collaborator-rev/releases).
 
 ### Locally
 
