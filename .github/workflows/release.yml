@@ -50,6 +50,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           fetch_all_tags: true
+          dry_run: true
+          previous_version: 1.1
 
       - name: Rename artifact
         id: rename_artifact
