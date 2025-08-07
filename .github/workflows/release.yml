@@ -46,7 +46,7 @@ jobs:
 
       - name: Bump version and push tag
         id: tag_version
-        uses: mathieudutour/github-tag-action@fix-tag-existing
+        uses: erodozer/github-tag-action@fix-tag-existing
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           fetch_all_tags: true
