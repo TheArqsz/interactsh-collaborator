@@ -1,9 +1,5 @@
 package interactsh;
 
-import burp.api.montoya.http.HttpService;
-import burp.api.montoya.http.message.requests.HttpRequest;
-import burp.api.montoya.http.message.responses.HttpResponse;
-import com.github.shamil.Xid;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -22,19 +18,26 @@ import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import com.github.shamil.Xid;
+import burp.api.montoya.http.HttpService;
+import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.http.message.responses.HttpResponse;
+import lombok.Getter;
 
 public class InteractshClient {
 	private PrivateKey privateKey;
 	private PublicKey publicKey;
 
-	private final String secretKey;
+	@Getter
 	private final String correlationId;
+	private final String secretKey;
 	private final String pubKeyBase64;
 
 	private String host;
 	private int port;
 	private boolean scheme;
-	private boolean isRegistered;
+	@Getter
+	private boolean registered;
 	private String authorization;
 
 	public InteractshClient() {
@@ -47,18 +50,14 @@ public class InteractshClient {
 		this.pubKeyBase64 =
 				Base64.getEncoder().encodeToString(getPublicKey().getBytes(StandardCharsets.UTF_8));
 
-		host = burp.gui.Config.getHost();
-		scheme = burp.gui.Config.getScheme();
-		authorization = burp.gui.Config.getAuth();
+		this.host = burp.gui.Config.getHost();
+		this.scheme = burp.gui.Config.getScheme();
+		this.authorization = burp.gui.Config.getAuth();
 		try {
-			port = Integer.parseInt(burp.gui.Config.getPort());
+			this.port = Integer.parseInt(burp.gui.Config.getPort());
 		} catch (NumberFormatException ne) {
-			port = 443;
+			this.port = 443;
 		}
-	}
-
-	public boolean isRegistered() {
-		return this.isRegistered;
 	}
 
 	public boolean register() {
@@ -71,20 +70,28 @@ public class InteractshClient {
 			registerData.put("correlation-id", correlationId);
 
 			String requestBody = registerData.toString();
-			String request = "POST /register HTTP/1.1\r\n" + "Host: " + host + "\r\n"
-					+ "User-Agent: Interact.sh Client\r\n" + "Content-Type: application/json\r\n"
-					+ "Content-Length: " + requestBody.length() + "\r\n";
-			if (!(authorization == null || authorization.isEmpty())) {
-				request += "Authorization: " + authorization + "\r\n";
+			StringBuilder requestBuilder = new StringBuilder();
+
+			requestBuilder.append("POST /register HTTP/1.1\r\n").append("Host: ").append(host)
+					.append("\r\n").append("User-Agent: Interact.sh Client\r\n")
+					.append("Content-Type: application/json\r\n").append("Content-Length: ")
+					.append(requestBody.length()).append("\r\n");
+
+			if (authorization != null && !authorization.isEmpty()) {
+				requestBuilder.append("Authorization: ").append(authorization).append("\r\n");
 			}
-			request += "Connection: close\r\n\r\n" + requestBody;
+
+			requestBuilder.append("Connection: close\r\n\r\n").append(requestBody);
+
+			String request = requestBuilder.toString();
 
 			HttpService httpService = HttpService.httpService(host, port, scheme);
 			HttpRequest httpRequest = HttpRequest.httpRequest(httpService, request);
 			HttpResponse resp = burp.BurpExtender.api.http().sendRequest(httpRequest).response();
 
 			if (resp.statusCode() == 200) {
-				this.isRegistered = true;
+				this.registered = true;
+				burp.BurpExtender.api.logging().logToOutput("Session registration was successful.");
 				return true;
 			} else {
 				burp.BurpExtender.api.logging().logToError(
@@ -104,12 +111,19 @@ public class InteractshClient {
 	}
 
 	public boolean poll() {
-		String request = "GET /poll?id=" + correlationId + "&secret=" + secretKey + " HTTP/1.1\r\n"
-				+ "Host: " + host + "\r\n" + "User-Agent: Interact.sh Client\r\n";
-		if (!(authorization == null || authorization.isEmpty())) {
-			request += "Authorization: " + authorization + "\r\n";
+		StringBuilder requestBuilder = new StringBuilder();
+
+		requestBuilder.append("GET /poll?id=").append(correlationId).append("&secret=")
+				.append(secretKey).append(" HTTP/1.1\r\n").append("Host: ").append(host)
+				.append("\r\n").append("User-Agent: Interact.sh Client\r\n");
+
+		if (authorization != null && !authorization.isEmpty()) {
+			requestBuilder.append("Authorization: ").append(authorization).append("\r\n");
 		}
-		request += "Connection: close\r\n\r\n";
+
+		requestBuilder.append("Connection: close\r\n\r\n");
+
+		String request = requestBuilder.toString();
 
 		HttpService httpService = HttpService.httpService(host, port, scheme);
 		HttpRequest httpRequest = HttpRequest.httpRequest(httpService, request);
@@ -153,16 +167,22 @@ public class InteractshClient {
 			JSONObject deregisterData = new JSONObject();
 			deregisterData.put("correlation-id", correlationId);
 			deregisterData.put("secret-key", secretKey);
-
 			String requestBody = deregisterData.toString();
 
-			String request = "POST /deregister HTTP/1.1\r\n" + "Host: " + host + "\r\n"
-					+ "User-Agent: Interact.sh Client\r\n" + "Content-Type: application/json\r\n"
-					+ "Content-Length: " + requestBody.length() + "\r\n";
-			if (!(authorization == null || authorization.isEmpty())) {
-				request += "Authorization: " + authorization + "\r\n";
+			StringBuilder requestBuilder = new StringBuilder();
+
+			requestBuilder.append("POST /deregister HTTP/1.1\r\n").append("Host: ").append(host)
+					.append("\r\nUser-Agent: Interact.sh Client\r\n")
+					.append("Content-Type: application/json\r\n").append("Content-Length: ")
+					.append(requestBody.length()).append("\r\n");
+
+			if (authorization != null && !authorization.isEmpty()) {
+				requestBuilder.append("Authorization: ").append(authorization).append("\r\n");
 			}
-			request += "Connection: close\r\n\r\n" + requestBody;
+
+			requestBuilder.append("Connection: close\r\n\r\n").append(requestBody);
+
+			String request = requestBuilder.toString();
 
 			HttpService httpService = HttpService.httpService(host, port, scheme);
 			HttpRequest httpRequest = HttpRequest.httpRequest(httpService, request);
@@ -175,10 +195,6 @@ public class InteractshClient {
 				burp.BurpExtender.api.logging().logToError(ex.getMessage());
 			}
 		}
-	}
-
-	public String getCorrelationId() {
-		return this.correlationId;
 	}
 
 	public String getInteractDomain() {

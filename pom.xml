@@ -5,26 +5,31 @@
 
     <groupId>interactsh</groupId>
     <artifactId>collaborator</artifactId>
-    <version>1.0.3-dev</version>
+    <version>1.1</version>
     <packaging>jar</packaging>
 
     <dependencies>
-        <!-- Burp API -->
         <dependency>
             <groupId>net.portswigger.burp.extensions</groupId>
             <artifactId>montoya-api</artifactId>
-            <version>2025.6</version>
+            <version>2025.8</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20231013</version>
+            <version>20250517</version>
         </dependency>
         <dependency>
             <groupId>com.github.0xshamil</groupId>
             <artifactId>java-xid</artifactId>
             <version>1.0.0</version>
         </dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.32</version>
+			<scope>provided</scope>
+		</dependency>
     </dependencies>
 
     <build>

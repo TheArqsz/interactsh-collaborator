@@ -1,22 +1,62 @@
 package burp.gui;
 
-import burp.api.montoya.MontoyaApi;
-import burp.api.montoya.ui.editor.HttpRequestEditor;
-import burp.api.montoya.ui.editor.HttpResponseEditor;
-import burp.listeners.InteractshListener;
-import interactsh.InteractshEntry;
-import layout.SpringUtilities;
-
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Desktop;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import javax.swing.*;
-import javax.swing.table.*;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.JToggleButton;
+import javax.swing.RowFilter;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
+import javax.swing.SpringLayout;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
+import burp.api.montoya.MontoyaApi;
+import burp.api.montoya.ui.editor.HttpRequestEditor;
+import burp.api.montoya.ui.editor.HttpResponseEditor;
+import burp.listeners.InteractshListener;
+import interactsh.InteractshEntry;
+import layout.SpringUtilities;
+import lombok.Getter;
+import lombok.Setter;
 
 public class InteractshTab extends JComponent {
 	private final MontoyaApi api;
@@ -26,7 +66,9 @@ public class InteractshTab extends JComponent {
 	private JScrollPane scrollPane;
 	private JSplitPane tableSplitPane;
 	private JPanel resultsPanel;
+	@Getter
 	private JTextField pollField;
+
 	private Table logTable;
 	private final LogTable logTableModel;
 
@@ -267,12 +309,16 @@ public class InteractshTab extends JComponent {
 				6, 6, // initX, initY
 				6, 6); // xPad, yPad
 
-		JPanel documentationPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		JLabel help = new JLabel(
-				"Check out https://github.com/projectdiscovery/interactsh for an up to date list of public Interactsh servers",
-				SwingConstants.LEFT);
+		JPanel documentationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+
+		String documentationUrl =
+				"https://github.com/projectdiscovery/interactsh?tab=readme-ov-file#using-self-hosted-server";
+		String linkHtml = "<html><b>View <a href=\"" + documentationUrl
+				+ "\">the list of public Interactsh servers</a> on ProjectDiscovery's GitHub</b></html>";
+
+		JEditorPane helpLink = createClickableLink(linkHtml);
 		documentationPanel.setAlignmentY(Component.TOP_ALIGNMENT);
-		documentationPanel.add(help);
+		documentationPanel.add(helpLink);
 		configPanel.add(documentationPanel);
 
 		add(mainPane);
@@ -322,8 +368,38 @@ public class InteractshTab extends JComponent {
 		tlsBox.setSelected(value);
 	}
 
-	public JTextField getPollField() {
-		return pollField;
+	private JEditorPane createClickableLink(String html) {
+		JEditorPane editorPane = new JEditorPane("text/html", html);
+		editorPane.setEditable(false);
+		editorPane.setOpaque(false);
+		editorPane.setHighlighter(null);
+
+		editorPane.addHyperlinkListener(e -> {
+			if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+				if (Desktop.isDesktopSupported()
+						&& Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+					try {
+						Desktop.getDesktop().browse(e.getURL().toURI());
+					} catch (IOException | URISyntaxException ex) {
+						api.logging().logToError(ex);
+					}
+				} else {
+					String url = e.getURL().toString();
+					StringSelection stringSelection = new StringSelection(url);
+					try {
+						Toolkit.getDefaultToolkit().getSystemClipboard()
+								.setContents(stringSelection, null);
+						Toolkit.getDefaultToolkit().getSystemSelection()
+								.setContents(stringSelection, null);
+					} catch (Exception ex) {
+						api.logging().logToError("Clipboard issue: " + ex.getMessage());
+					}
+					api.logging().logToOutput(
+							"Desktop browse is not supported. URL copied to clipboard: " + url);
+				}
+			}
+		});
+		return editorPane;
 	}
 
 	private void updateUnreadCount() {
@@ -363,9 +439,6 @@ public class InteractshTab extends JComponent {
 		}
 	}
 
-	//
-	// extend JTable to handle cell selection
-	//
 	private class Table extends JTable {
 
 		public Table(TableModel tableModel) {
@@ -452,9 +525,13 @@ public class InteractshTab extends JComponent {
 					String.class, 70, 100), SOURCE_IP("Source IP address", String.class, 120,
 							-1), TIME("Time", Instant.class, 150, -1);
 
+			@Getter
 			private final String name;
+			@Getter
 			private final Class<?> type;
+			@Getter
 			private final int preferredWidth;
+			@Getter
 			private final int maxWidth;
 
 			Column(String name, Class<?> type, int preferredWidth, int maxWidth) {
@@ -462,22 +539,6 @@ public class InteractshTab extends JComponent {
 				this.type = type;
 				this.preferredWidth = preferredWidth;
 				this.maxWidth = maxWidth;
-			}
-
-			public String getName() {
-				return name;
-			}
-
-			public Class<?> getType() {
-				return type;
-			}
-
-			public int getPreferredWidth() {
-				return preferredWidth;
-			}
-
-			public int getMaxWidth() {
-				return maxWidth;
 			}
 		}
 
@@ -524,17 +585,5 @@ public class InteractshTab extends JComponent {
 
 	public void cleanup() {
 		listener.close();
-	}
-
-	public JTable getLogTable() {
-		return logTable;
-	}
-
-	public List<InteractshEntry> getLog() {
-		return log;
-	}
-
-	public AbstractTableModel getLogTableModel() {
-		return logTableModel;
 	}
 }

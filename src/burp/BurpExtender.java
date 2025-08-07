@@ -5,6 +5,7 @@ import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.extension.ExtensionUnloadingHandler;
 import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
 import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider;
+import burp.gui.Config;
 import burp.gui.InteractshTab;
 import interactsh.InteractshEntry;
 
@@ -16,7 +17,6 @@ import javax.swing.JMenuItem;
 public class BurpExtender
 		implements BurpExtension, ContextMenuItemsProvider, ExtensionUnloadingHandler {
 	public static MontoyaApi api;
-	public static int pollTime = 60;
 	public static InteractshTab tab;
 
 	@Override
@@ -26,7 +26,7 @@ public class BurpExtender
 		api.extension().setName("Interactsh Collaborator");
 		api.userInterface().registerContextMenuItemsProvider(this);
 		api.extension().registerUnloadingHandler(this);
-		api.logging().logToOutput("Starting Interactsh Collaborator!");
+		api.logging().logToOutput("Starting Interactsh Collaborator");
 
 		burp.gui.Config.generateConfig();
 		BurpExtender.tab = new InteractshTab(api);
@@ -46,11 +46,7 @@ public class BurpExtender
 			return Integer.parseInt(BurpExtender.tab.getPollField().getText());
 		} catch (Exception ex) {
 		}
-		return 60;
-	}
-
-	public static void updatePollTime(int poll) {
-		pollTime = poll;
+		return Integer.parseInt(Config.getPollInterval());
 	}
 
 	public static void addToTable(InteractshEntry i) {

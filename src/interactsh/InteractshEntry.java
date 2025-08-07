@@ -6,6 +6,8 @@ import java.time.Instant;
 
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.http.message.responses.HttpResponse;
+import lombok.Getter;
+import lombok.Setter;
 
 // {"protocol":"dns","unique-id":"c4jup534f3acspvifdr0cru63feyyyyyn","full-id":"c4jup534f3acspvifdr0cru63feyyyyyn","q-type":"A","raw-request":";;
 // opcode: QUERY, status: NOERROR, id: 52297\n;; flags: cd; QUERY: 1, ANSWER: 0, AUTHORITY: 0,
@@ -64,8 +66,10 @@ public class InteractshEntry {
 	public String rawResponse;
 	public String address;
 	public Instant timestamp;
-	private boolean isRead = false;
 
+	@Getter
+	@Setter
+	private boolean read = false;
 
 	public final HttpRequest httpRequest;
 	public final HttpResponse httpResponse;
@@ -125,13 +129,5 @@ public class InteractshEntry {
 	public String toString() {
 		return "Protocol: " + protocol + "\n" + "UID: " + uid + "\n" + "Address: " + address + "\n"
 				+ "Timestamp: " + timestamp + "\n";
-	}
-
-	public boolean isRead() {
-		return isRead;
-	}
-
-	public void setRead(boolean read) {
-		isRead = read;
 	}
 }
