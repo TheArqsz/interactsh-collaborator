@@ -1,11 +1,46 @@
-# Interactsh Collaborator
-This is a Burpsuite plugin for Interact.sh
+# Interactsh Collaborator - Revised
 
-This plugin implements the client side logic from [interactsh-client](https://github.com/projectdiscovery/interactsh/). It will allow you to generate new domains that can be used for OOB testing. If you host your own version of Interactsh you can configure it in the Configuration tab.
+This is a Burp Suite extension for OOB testing with Interact.sh.
+
+## About This Fork
+
+I forked this project because the original repository appears to be unmaintained. [The last commit](https://github.com/wdahlenburg/interactsh-collaborator/commit/dd92e5573263bc7b341ed1b980d705dba8417d92) was on August 5, 2023, and several pull requests and issues have been ignored since then.
+
+The goal of this fork is to keep the project alive, incorporate useful community contributions, and add my own improvements. This version incorporates some changes from the following pull requests to the original repository:
+
+- [PR #22](https://github.com/wdahlenburg/interactsh-collaborator/pull/22): Updated vulnerable dependencies.
+- [PR #19](https://github.com/wdahlenburg/interactsh-collaborator/pull/19): Added a "Poll Now" button.
+- [PR #18](https://github.com/wdahlenburg/interactsh-collaborator/pull/18): Major performance improvements, UI enhancements, and better table controls.
+
+## Changelog 
+
+### v1.1
+
+This fork begins at version 1.1, building on the original [1.0.2-dev](https://github.com/wdahlenburg/interactsh-collaborator/releases/tag/v1.0.2) code.
+
+Changes:
+
+- Major performance improvement - generating a new payload no longer creates a new client and thread. The extension now uses a single client, which makes it much faster and more stable.
+- New features:
+	- Added a **Refresh** button to manually check for interactions.
+	- Added a **Clear log** button to clear the results table.
+	- Added a **Regenerate Interactsh Session** button that forces current session to be deregistered and creates a new one.
+	- Added a **Copy URL to clipboard** button that, similarily to the Collaborator's one, simply copies current session's Interactsh URL to the system clipboard 
+	- Added Collaborator-like filtering feature for different types of payloads
+	- Added a built-in viewer for HTTP/S request and response details.
+- Fixes & UX:
+	- The polling interval setting is now reliably applied.
+	- The interactions table now supports selecting individual cells, rows, and columns for copying.
+	- The user interface was refreshed to better match the look and feel of Burp's native tools.
+
+- Security - patched vulnerable dependencies in pom.xml.
+- Added Dockerfile - You can now easily build the extension locally using Docker.
+
+## About
+
+This plugin implements the client side logic from [interactsh-client](https://github.com/projectdiscovery/interactsh/). It allows you to generate new domains that can be used for OOB testing. If you host your own version of Interactsh you can configure it in the **Configuration** tab.
 
 This extension works in addition to Burpsuite's Collaborator service.
-
-All results are logged in the Interactsh Logs tab once the extension is loaded. Verbose details will be displayed in the bottom window once an OOB interaction is logged and selected.
 
 ![Interactsh-Collaborator](https://user-images.githubusercontent.com/4451504/131763193-7f0c32f3-1683-4166-9c9d-1a948ea04fd4.gif)
 
