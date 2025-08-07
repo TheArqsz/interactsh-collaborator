@@ -22,7 +22,7 @@ jobs:
     name: Release and Publish
     if: |
         github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'push' && contains(github.event.head_commit.message, '[RELEASE]')) || github.event.pull_request.merged == true
+        github.event_name == 'push'|| github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     permissions:
@@ -48,11 +48,10 @@ jobs:
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.2
         with:
-            github_token: ${{ secrets.GITHUB_TOKEN }}
-            fetch_all_tags: true
-            default_bump: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          fetch_all_tags: true
 
-      - name: Rename generated artifact
+      - name: Rename artifact
         id: rename_artifact
         run: |
           cp ./target/collaborator-*-jar-with-dependencies.jar ./target/interactsh-collaborator.jar
@@ -60,7 +59,7 @@ jobs:
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ github.event.inputs.release_notes || format('Official release of version {0}. The attached JAR file contains the compiled application and all dependencies.', steps.tag_version.outputs.new_tag) }}
-          artifacts: ./target/interactsh-collaborator.jar
+            tag: v${{ steps.tag_version.outputs.version }}
+            name: v${{ steps.tag_version.outputs.version }}
+            body: ${{ github.event.inputs.release_notes || format('Official release of version {0}. The attached JAR file contains the compiled application and all dependencies.', steps.tag_version.outputs.version) }}
+            artifacts: ./target/interactsh-collaborator.jar
