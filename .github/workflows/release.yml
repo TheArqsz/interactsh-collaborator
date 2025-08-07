@@ -41,28 +41,26 @@ jobs:
           java-version: '17'
           cache: 'maven'
 
-      - name: Extract project version from pom.xml
-        id: get_version
-        run: |
-          echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> "$GITHUB_OUTPUT"
-
       - name: Build project with Maven
         run: mvn clean package -DskipTests -B
 
-      - name: Create and push Git tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v${{ steps.get_version.outputs.version }}" -m "v${{ steps.get_version.outputs.version }}"
-          git push origin "v${{ steps.get_version.outputs.version }}"
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            fetch_all_tags: true
+            default_bump: false
 
+      - name: Rename generated artifact
+        id: rename_artifact
+        run: |
+          cp ./target/collaborator-*-jar-with-dependencies.jar ./target/interactsh-collaborator.jar
 
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
         with:
-            tag: v${{ steps.get_version.outputs.version }}
-            name: v${{ steps.get_version.outputs.version }}
-            body: ${{ github.event.inputs.release_notes || format('Official release of version {0}. The attached JAR file contains the compiled application and all dependencies.', steps.get_version.outputs.version) }}
-            artifacts: ./target/collaborator-${{ steps.get_version.outputs.version }}-jar-with-dependencies.jar
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ github.event.inputs.release_notes || format('Official release of version {0}. The attached JAR file contains the compiled application and all dependencies.', steps.tag_version.outputs.new_tag) }}
+          artifacts: ./target/interactsh-collaborator.jar
