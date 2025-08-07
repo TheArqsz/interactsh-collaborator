@@ -55,7 +55,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v${{ steps.get_version.outputs.version }}" -m "Release v${{ steps.get_version.outputs.version }}"
+          git tag -a "v${{ steps.get_version.outputs.version }}" -m "v${{ steps.get_version.outputs.version }}"
           git push origin "v${{ steps.get_version.outputs.version }}"
 
 
@@ -63,6 +63,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
             tag: v${{ steps.get_version.outputs.version }}
-            name: Release ${{ steps.get_version.outputs.version }}
-            body: ${{ github.event.inputs.release_notes || format('Official release of version {0}.\n\nThe attached JAR file contains the compiled application and all dependencies.', steps.get_version.outputs.version) }}
+            name: v${{ steps.get_version.outputs.version }}
+            body: ${{ github.event.inputs.release_notes || format('Official release of version {0}. The attached JAR file contains the compiled application and all dependencies.', steps.get_version.outputs.version) }}
             artifacts: ./target/collaborator-${{ steps.get_version.outputs.version }}-jar-with-dependencies.jar
